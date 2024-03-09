@@ -168,6 +168,8 @@ public:
     std::string readStringVint();
     // std::string readStringWithoutLength();
 
+    bool writeToFile(const std::string& name) const;
+    bool readFromFile(const std::string& name);
 
     size_t getReadableSize() const;
 
@@ -186,7 +188,41 @@ public:
      */
     std::string toHexString() const;
 
+    /**
+     * @brief 获取可读取的数据，保存到一个或多个iovec缓冲区的集合
+     * 
+     * @param buffers 用于保存缓冲区的集合
+     * @param len 想要读取的数据长度
+     * @return uint64_t 返回实际读取的数据长度
+     * 
+     * @details 获取一个或多个缓冲区的集合，
+     *          这些缓冲区共同表示ByteArray中当前位置之后的数据。
+     *          这些缓冲区映射到ByteArray内部的不同内存块，可用于执行非连续内存的读取操作。
+     */
+    uint64_t getReadBuffers(std::vector<iovec>& buffers, uint64_t len) const;
+    
+    /**
+     * @brief 获取可读取的数据，保存到一个或多个iovec缓冲区的集合，从position位置开始
+     * 
+     * @param buffers 用于保存缓冲区的集合
+     * @param len 想要读取的数据长度
+     * @param position 读取位置
+     * @return uint64_t 返回实际读取的数据长度
+     */
+    uint64_t getReadBuffers(std::vector<iovec>& buffers, uint64_t len, uint64_t position) const;
 
+
+    /**
+     * @brief 获取可写入的缓存，保存到一个或多个iovec缓冲区的集合
+     * 
+     * @param buffers 保存可写入的内存的iovec集合
+     * @param len 写入长度
+     * @return uint64_t 返回实际可写入数据的长度
+     */
+    uint64_t getWriteBuffers(std::vector<iovec>& buffers, uint64_t len);
+
+    // 清空ByteArray中的数据
+    void clear();
 
 private:
     /**
@@ -209,7 +245,11 @@ private:
     size_t m_nodeSize; // 一个内存块的大小
     size_t m_position; // 当前位置，以字节为单位
     size_t m_capacity; // 链表总容量
+
+    // 每当且仅当m_position的值大于m_size时，就会将m_size的值更新为m_position；而m_position变小时，不会更新m_size的值为m_position
+    // 但是m_size的值不会减小，这样就可以保证m_size的值一直是ByteArray中的数据的大小
     size_t m_size; // 当前已保存的字节数
+    
     std::endian m_endian; // 字节序
 
     Node* m_head; // 指向整个node链表中的第一个node
