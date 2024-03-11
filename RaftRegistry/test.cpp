@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include <functional>
+#include <chrono>
 
 using namespace std;
 
@@ -14,7 +15,7 @@ class A {
 public:
     static int a;
     static void func1(int a) {
-
+        return;
     }
     void func2(int a) {
 
@@ -23,17 +24,16 @@ public:
 };
 
 int main() {
-
-    int a = 90;
-    int aa = a;
-    int& b = a;
-    const int *const d = &a;
-    int* e = &a;
-    decltype(d) c = &aa;
-
-    decltype(&func1) fu = func1;
-
-    decltype(*e) ee
+    auto old = std::chrono::high_resolution_clock::now();
+    int i = 0;
+    while(i<1000000) {
+        ++i;
+    }
+    std::cout << (std::chrono::high_resolution_clock::now()-old).count() << std::endl;
+    // 将上面得到的时间转换为毫秒
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-old).count() << std::endl;
+    // 转换为nano
+    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-old).count();
 
     return 0;
 }
