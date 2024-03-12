@@ -252,9 +252,9 @@ void ByteArray::read(void* buf, size_t size, size_t position) const {
         throw std::out_of_range("no enough data to read");
     }
 
-    // ? 原项目中没有进行这个实现，而我认为这个read的重载函数要实现的功能就是让用户指定读取的开始位置
-    // 那就势必要实现这个功能，也许原作者的想法是，即便由用户指定了读取的开始位置，也得大于m_position
-    // 根据position计算出需要从哪个node开始读取数据
+    // ？原项目中没有进行这个实现，而我认为这个read的重载函数要实现的功能就是让用户指定读取的开始位置
+    // ？那就势必要实现这个功能，也许原作者的想法是，即便由用户指定了读取的开始位置，也得大于m_position
+    // ？根据position计算出需要从哪个node开始读取数据
     auto cur = m_head;
     size_t num = position / m_nodeSize;
     while(num--) {
