@@ -213,6 +213,7 @@ struct Caster<std::string, From> {
 } // namespace DETAIL
 
 // 下面两个函数模板是对外的接口
+// 这两个函数模板的作用是判断To和From是否是相同类型，如果是，则直接返回From，否则调用Caster<To, From>::cast(from)进行转换
 
 /**
  * @brief 判断To和From是否是相同类型，如果是，则直接返回From，否则调用Caster<To, From>::cast(from)进行转换
