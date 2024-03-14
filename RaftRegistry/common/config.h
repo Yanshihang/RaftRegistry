@@ -59,8 +59,8 @@ template <typename To, typename From>
 class LexicalCast {
 public:
     To operator()(const From& value) {
-        // 调用lexical_cast.h头文件中的的lexical_cast函数，将From类型转换为To类型
-        return lexical_cast<To>(value);
+        // 调用lexical_cast.h头文件中的的LexicalCastFunc函数，将From类型转换为To类型
+        return LexicalCastFunc<To>(value);
     }
 };
 
@@ -416,7 +416,7 @@ public:
     // 这里之所以使用ConfigVarBase::ptr类型的指针，是因为ConfigVarBase是ConfigVar的基类
     // 通过ConfigVarBase::ptr类型的指针，可以指向ConfigVar的对象
     // 不直接使用ConfigVar::ptr类型的指针，是因为ConfigVar是一个模板类，使用不同的类型参数实例化的派生类确实会导致不同的派生类类型
-    using ConfigVarMap = std::map<std::string, ConfigVarBase::ptr>;
+    using configVarMap = std::map<std::string, ConfigVarBase::ptr>;
 
     /**
      * @brief 查找指定名称的配置变量（ConfigVar的对象），如果没有则创建一个新的配置变量，并加入到映射中。
@@ -503,8 +503,8 @@ public:
     static void Visit(std::function<void(ConfigVarBase::ptr)> cb);
 private:
     // 返回包含着所有配置项的map
-    static ConfigVarMap& GetDatas() {
-        static ConfigVarMap p_datas;
+    static configVarMap& GetDatas() {
+        static configVarMap p_datas;
         return p_datas;
     }
 

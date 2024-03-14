@@ -53,14 +53,14 @@ constexpr T ByteSwap(T value) {
 
 
 /**
- * @brief 主机序转为网络序，检测主机序是否为大端序，如果是则不做任何操作，否则转换字节序
+ * @brief 字节序转换
  * 
  * @tparam T 在编译期检测传入的值是否为整数类型，不是则编译时报错
  * @param value 
  * @return constexpr T 
  */
 template <std::integral T>
-constexpr T HostToNetCast(T value) {
+constexpr T EndianCast(T value) {
     if constexpr (sizeof(uint8_t) == sizeof(value) || std::endian::native == std::endian::big) {
         return value;
     } else if constexpr (std::endian::native == std::endian::little) {

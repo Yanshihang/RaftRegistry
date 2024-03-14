@@ -11,8 +11,8 @@ namespace RR {
 
 /**
  * @brief 模板变量声明，用于获取类的成员数量
- * @details 如果某些类对这个模板变量进行了特化，那么就可以通过memberCount模板变量获取到相应类的成员数量
- *          没有对这个模板变量进行特化的类，通过memberCount模板变量只会返回0
+ * @details 如果某些类对这个模板变量进行了特化，那么就可以通过MemberCount模板变量获取到相应类的成员数量
+ *          没有对这个模板变量进行特化的类，通过MemberCount模板变量只会返回0
  */
 template <typename T>
 constexpr std::size_t member = 0;
@@ -26,16 +26,16 @@ struct UniversalType {
 };
 
 /**
- * @brief memberCount的实现函数，核心逻辑
+ * @brief MemberCount的实现函数，核心逻辑
  * 
  * @tparam T 
  * @tparam Args 
  * @return consteval 
  */
 template <typename T, typename... Args>
-consteval std::size_t memberCountImple() {
+consteval std::size_t MemberCountImple() {
     // 使用requires关键字判断某个类型的构造函数是否还能接收参数
-    // 如果能接收参数，则证明还有成员，那么就递归调用memberCountImple函数
+    // 如果能接收参数，则证明还有成员，那么就递归调用MemberCountImple函数
     if constexpr (requires
     {
         T {
@@ -43,7 +43,7 @@ consteval std::size_t memberCountImple() {
             {UniversalType{}}
         }
     }) {
-        return memberCountImple<T, Args..., UniversalType>();
+        return MemberCountImple<T, Args..., UniversalType>();
     }else { // 如果不能接收参数，则证明已经到达了最后一个成员
         return sizeof...(Args);
     }
@@ -56,16 +56,16 @@ consteval std::size_t memberCountImple() {
  * @return consteval 
  */
 template <typename T>
-consteval std::size_t memberCount() {
+consteval std::size_t MemberCount() {
     if constexpr (member<T> > 0) {
         // 如果某个类对member模板变量进行了特化，那么就返回特化的值
         return member<T>;
-    }else {// 否则，调用memberCountImple函数进行计算
-        return memberCountImple<T>();
+    }else {// 否则，调用MemberCountImple函数进行计算
+        return MemberCountImple<T>();
     }
 }
 
-constexpr static std::size_t maxMember = 64;
+constexpr static std::size_t MaxMember = 64;
 
 /**
  * @brief 对object的所有成员进行访问（即调用visitor）
@@ -79,7 +79,7 @@ constexpr decltype(auto) VisitMembers(auto&& object, auto&& visitor) {
     // 使用type别名获取object的类型，不包括const、volatile和引用
     using type = std::remove_cvref_t<decltype(object)>;
     // count用于存储object的成员数量
-    constexpr auto count = memberCount<type>();
+    constexpr auto count = MemberCount<type>();
 
     // 判断type是否是一个空类
     if constexpr (count == 0 && std::is_class_v<type> && !std::is_same_v<type, std::monostate>) {
@@ -88,7 +88,7 @@ constexpr decltype(auto) VisitMembers(auto&& object, auto&& visitor) {
         static_assert(!sizeof(type), "object is empty");
     }
 
-    static_assert(count <= maxMember, "exceed the max or members");
+    static_assert(count <= MaxMember, "exceed the max or members");
 
     if constexpr(count ==0) {
         return visitor();

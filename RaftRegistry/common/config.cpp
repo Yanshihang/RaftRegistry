@@ -7,8 +7,8 @@
 
 namespace RR {
 
-// 创建一个静态的logger对象，用于记录日志，只允许在本文件中使用
-static auto logger = GetLoggerInstance();
+// 创建一个静态的Logger对象，用于记录日志，只允许在本文件中使用
+static auto Logger = GetLoggerInstance();
 
 ConfigVarBase::ptr Config::LookUpBase(const std::string& name) {
     std::unique_lock<co_rmutex> lock(GetMutex().Reader());
@@ -20,7 +20,7 @@ ConfigVarBase::ptr Config::LookUpBase(const std::string& name) {
 }
 
 void Config::LoadFromFile(const std::string& path) {
-    SPDLOG_LOGGER_INFO(logger, "LoadFromFile: {}", path);
+    SPDLOG_LOGGER_INFO(Logger, "LoadFromFile: {}", path);
     YAML::Node root = YAML::LoadFile(path);
     LoadFromYaml(root);
 }
@@ -52,7 +52,7 @@ void Config::LoadFromYaml(const YAML::Node& node) {
 }
 
 /**
- * @brief 列出某个节点下的所有子节点（包含自身）
+ * @brief 列出node下的所有子节点（包含自身），并将结果保存到result中
  * 
  * @param prefix 前缀(名字)，如果为空则表示根节点，否则表示子节点；如果是子节点则前缀是父节点的名字加上一个点：parent.child
  * @param node 要检索的节点
@@ -60,7 +60,7 @@ void Config::LoadFromYaml(const YAML::Node& node) {
  */
 static void ListAllMembers(const std::string& prefix, const YAML::Node& node, std::list<std::pair<std::string, YAML::Node>> result) {
     if (prefix.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789._") != std::string::npos) {
-        SPDLOG_LOGGER_ERROR(logger, "Config invalid name: {}", prefix);
+        SPDLOG_LOGGER_ERROR(Logger, "Config invalid name: {}", prefix);
         return;
     }
     result.emplace_back(prefix, node);

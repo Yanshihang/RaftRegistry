@@ -14,34 +14,34 @@ class TimeMeasure {
 public:
 TimeMeasure() : m_begin(std::chrono::high_resolution_clock::now()) {};
 ~TimeMeasure() {
-    std::cout << "Time elapsed:" << toString(elapsed_seconds()) << "s " << toString(elapsed_milli()) << "ms " << toString(elapsed_micro()) << "us " << toString(elapsed_nano()) << "ns" << std::endl;
+    std::cout << "Time elapsed:" << toString(elapsedSeconds()) << "s " << toString(elapsedMilli()) << "ms " << toString(elapsedMicro()) << "us " << toString(elapsedNano()) << "ns" << std::endl;
 }
 
 void reset() {
     m_begin = std::chrono::high_resolution_clock::now();
 }
 
-int64_t elapsed_milli() const {
+int64_t elapsedMilli() const {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_begin).count();
 }
 
-int64_t elapsed_micro() const {
+int64_t elapsedMicro() const {
     return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - m_begin).count();
 }
 
-int64_t elapsed_nano() const {
+int64_t elapsedNano() const {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - m_begin).count();
 }
 
-int64_t elapsed_seconds() const {
+int64_t elapsedSeconds() const {
     return std::chrono::duration_cast<std::chrono::seconds>(std::chrono::high_resolution_clock::now() - m_begin).count();
 }
 
-int64_t elapsed_minutes() const {
+int64_t elapsedMinutes() const {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - m_begin).count();
 }
 
-int64_t elapsed_hours() const {
+int64_t elapsedHours() const {
     return std::chrono::duration_cast<std::chrono::hours>(std::chrono::high_resolution_clock::now() - m_begin).count();
 }
 

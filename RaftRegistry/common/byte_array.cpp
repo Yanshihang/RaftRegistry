@@ -8,7 +8,7 @@
 
 namespace RR {
 
-static auto logger = GetLoggerInstance();
+static auto Logger = GetLoggerInstance();
 
 // 构造函数
 ByteArray::ByteArray(size_t size) : m_nodeSize(size), m_position(0), m_capacity(size), m_size(0), m_endian(std::endian::big), m_head(new Node(size)), m_current(m_head) {};
@@ -83,27 +83,27 @@ void ByteArray::writeFUint8(uint8_t value) {
 }
 
 void ByteArray::writeFInt16(int16_t value) {
-    writeFInt(value);
+    WriteFInt(value);
 }
 
 void ByteArray::writeFUint16(uint16_t value) {
-    writeFInt(value);
+    WriteFInt(value);
 }
 
 void ByteArray::writeFInt32(int32_t value) {
-    writeFInt(value);
+    WriteFInt(value);
 }
 
 void ByteArray::writeFUint32(uint32_t value) {
-    writeFInt(value);
+    WriteFInt(value);
 }
 
 void ByteArray::writeFInt64(int64_t value) {
-    writeFInt(value);
+    WriteFInt(value);
 }
 
 void ByteArray::writeFUint64(uint64_t value) {
-    writeFInt(value);
+    WriteFInt(value);
 }
 
 // 下面四个函数分别是Zigzag的编码和解码
@@ -215,7 +215,7 @@ void ByteArray::writeStringWithoutLength(const std::string& value) {
 // 读取数据
 void ByteArray::read(void* buf, size_t size) {
     if (getReadableSize() < size) {
-        SPDLOG_LOGGER_ERROR(logger,"no enough data to read");
+        SPDLOG_LOGGER_ERROR(Logger,"no enough data to read");
         throw std::out_of_range("no enough data to read");
     }
 
@@ -248,7 +248,7 @@ void ByteArray::read(void* buf, size_t size) {
 
 void ByteArray::read(void* buf, size_t size, size_t position) const {
     if (m_size < position + size) {
-        SPDLOG_LOGGER_ERROR(logger,"no enough data to read");
+        SPDLOG_LOGGER_ERROR(Logger,"no enough data to read");
         throw std::out_of_range("no enough data to read");
     }
 
@@ -422,7 +422,7 @@ std::string ByteArray::readStringVint() {
 bool ByteArray::writeToFile(const std::string& name) const{
     std::ofstream ofs(name, std::ios::trunc | std::ios::binary);
     if (!ofs) {
-        SPDLOG_LOGGER_ERROR(logger,"Function writeToFile file={} failed, errno={}, errstr={}",name, errno, strerror(errno));
+        SPDLOG_LOGGER_ERROR(Logger,"Function writeToFile file={} failed, errno={}, errstr={}",name, errno, strerror(errno));
         return false;
     }
 
@@ -446,7 +446,7 @@ bool ByteArray::writeToFile(const std::string& name) const{
 bool ByteArray::readFromFile(const std::string& name) {
     std::ifstream ifs(name, std::ios::binary);
     if (ifs.fail()) {
-        SPDLOG_LOGGER_ERROR(logger,"Function readFromFile file={} failed, errno={}, errstr={}",name, errno, strerror(errno));
+        SPDLOG_LOGGER_ERROR(Logger,"Function readFromFile file={} failed, errno={}, errstr={}",name, errno, strerror(errno));
         return false;
     }
 
@@ -625,7 +625,7 @@ size_t ByteArray::getPosition() const {
 
 void ByteArray::setPosition(size_t position) {
     if (position > m_capacity) {
-        SPDLOG_LOGGER_ERROR(logger,"set position out of range");
+        SPDLOG_LOGGER_ERROR(Logger,"set position out of range");
         throw std::out_of_range("set position out of range");
     }
     m_position = position;

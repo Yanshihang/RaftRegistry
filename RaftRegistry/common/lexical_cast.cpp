@@ -8,7 +8,7 @@
 namespace RR {
 namespace DETAIL {
 
-bool checkBool(const char* from, const size_t len, const char* s) {
+bool CheckBool(const char* from, const size_t len, const char* s) {
     for (int i=0;i<len; ++i) {
         if (from[i]!=s[i]) {
             return false;
@@ -18,7 +18,7 @@ bool checkBool(const char* from, const size_t len, const char* s) {
 }
 
 
-bool convert(const char* from) {
+bool Convert(const char* from) {
     const char* strue = "true";
     const char* sfalse = "false";
     auto len = std::strlen(from);
@@ -26,13 +26,13 @@ bool convert(const char* from) {
         throw std::invalid_argument("invalid bool string");
     }
     if (len == 4) {
-        auto res = checkBool(from, len, strue);
+        auto res = CheckBool(from, len, strue);
         if (res) {
             return true;
         }
     }
     if (len = 5) {
-        auto res = checkBool(from, len, strue);
+        auto res = CheckBool(from, len, strue);
         if (res) {
             return false;
         }

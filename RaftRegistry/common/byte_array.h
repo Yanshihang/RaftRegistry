@@ -66,7 +66,7 @@ public:
      * @param value 被写入的值
      */
     template<typename T>
-    void writeFInt(T value) {
+    void WriteFInt(T value) {
         // 判断要写入的值是否为host字节序
         if (!m_endian == std::endian::native) {
             value = ByteSwap(value)
