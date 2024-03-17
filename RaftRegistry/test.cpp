@@ -3,27 +3,16 @@
 
 using namespace std;
 
-decltype(auto) func(auto&& f) {
-    cout << "func" << endl;
-    return f();
-}
+class A{
+    public:
+    virtual void func();
+};
 
-auto func2() {
-    cout << "func2" << endl;
-    return 2;
-}
-
-class A {
-public:
-    int a;
-    int b;
-    A(int a, int b) : a(a), b(b) {}
+class B: public A{
+    public:
+    void func();
 };
 
 int main() {
-    int a = 1;
-    int b = 2;
-    A aObject(a, b);
-
-    return 0;
+    
 }
