@@ -20,13 +20,13 @@ public:
 
     // 定义套接字地址族的枚举
     enum Family {
-        Ipv4 = AF_INET,
-        Ipv6 = AF_INET6,
-        Unix = AF_UNIX,
+        IPV4 = AF_INET,
+        IPV6 = AF_INET6,
+        UNIX = AF_UNIX,
     };
 
     // 定义套接字类型的枚举
-    enum  Type {
+    enum Type {
         TCP = SOCK_STREAM,
         UDP = SOCK_DGRAM,
     };
@@ -205,7 +205,7 @@ public:
 
     bool isConnected() const;
     bool isValid() const;
-    int getError() const;
+    int getError(); // 不能设置为const，因为内部调用了getsockopt来获取错误码，而getsockopt获取错误码后会清除错误码（这是一个修改动作）
 
     // 打印套接字的详细信息
     std::ostream& dump(std::ostream& os) const;

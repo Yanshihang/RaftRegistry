@@ -5,17 +5,15 @@
 #include "socket.h"
 #include <netinet/tcp.h> // Include the header file that defines TCP_NODELAY
 
-#include <libgo/netio/unix/hook.h>
-#include <libgo/netio/unix/hook_helper.h>
+// #include <libgo/netio/unix/hook.h>
+// #include <libgo/netio/unix/hook_helper.h>
 
 namespace RR {
 
 static auto Logger = GetLoggerInstance();
 // 构造函数和析构函数
 
-Socket::Socket(int family, int type, int protocol) : m_socket(-1), m_family(family), m_type(type), m_protocol(protocol) {
-    
-}
+Socket::Socket(int family, int type, int protocol) : m_socket(-1), m_family(family), m_type(type), m_protocol(protocol) {}
 
 Socket::~Socket() {
     close();
@@ -311,12 +309,291 @@ bool Socket::close() {
     return true;
 }
 
-Address::ptr Address::getRemoteAddress() {
+ssize_t Socket::send(const void* buffer, size_t length, int flags) {
+    if (isConnected()) {
+        return ::send(m_socket, buffer, length, flags);
+    }
+
+    // 如果套接字未连接，返回-1
+    return -1;
+}
+
+ssize_t Socket::send(const iovec* buffer, size_t length, int flags) {
+    if (isConnected()) {
+        msghdr msg;
+        memset(&msg, 0, sizeof(msg));
+        msg.msg_iov = const_cast<iovec*>(buffer);
+        msg.msg_iovlen = length;
+        return ::sendmsg(m_socket, &msg, flags);
+    }
+
+    return -1;
+}
+
+ssize_t Socket::sendTo(const void* buffer, size_t length, const Address::ptr to, int flags) {
+    if (isConnected()) {
+        return ::sendto(m_socket, buffer, length, flags, to->getAddr(), to->getAddrLen());
+    }
+
+    return -1;
+}
+
+ssize_t Socket::sendTo(const iovec* buffer, size_t length, const Address::ptr to, int flags) {
+    if (isConnected()) {
+        msghdr msg;
+        memset(&msg, 0, sizeof(msg));
+        msg.msg_iov = const_cast<iovec*>(buffer);
+        msg.msg_iovlen = length;
+        msg.msg_name = to->getAddr();
+        msg.msg_namelen = to->getAddrLen();
+        return ::sendmsg(m_socket, &msg, flags);
+    }
+
+    return -1;
+}
+
+ssize_t Socket::recv(void* buffer, size_t length, int flags) {
+    if (isConnected()) {
+        return ::recv(m_socket, buffer, length, flags);
+    }
+
+    return -1;
+}
+
+ssize_t Socket::recv(iovec* buffer, size_t length, int flags) {
+    if (isConnected()) {
+        msghdr msg;
+        memset(&msg, 0, sizeof(msg));
+        msg.msg_iov = const_cast<iovec*>(buffer);
+        msg.msg_iovlen = length;
+        return ::recvmsg(m_socket, &msg, flags);
+    }
+
+    return -1;
+}
+
+ssize_t Socket::recvFrom(void* buffer, size_t length, Address::ptr from, int flags) {
+    if (isConnected()) {
+        auto destAddrLen = from->getAddrLen();
+        return ::recvfrom(m_socket, buffer, length, flags, from->getAddr(), &destAddrLen);
+    }
+}
+
+ssize_t Socket::recvFrom(iovec* buffer, size_t length, Address::ptr from, int flags) {
+    if (isConnected()) {
+        msghdr msg;
+        memset(&msg, 0, sizeof(msg));
+        msg.msg_iov = const_cast<iovec*>(buffer);
+        msg.msg_iovlen = length;
+        msg.msg_name = from->getAddr();
+        msg.msg_namelen = from->getAddrLen();
+        return ::recvmsg(m_socket, &msg, flags);
+    }
+
+    return -1;
+}
+
+Address::ptr Socket::getRemoteAddress() {
+    if (m_remoteAddress) {
+        return m_remoteAddress;
+    }
+
+    // 创建地址的智能指针
+    Address::ptr result;
+
+    // 让智能指针指向一个新的Address对象。该对象用于保存远程地址的信息
+    // 根据地址族创建对应的Address对象，由于本地地址与远程地址的地址族一样，所以使用m_family进行判断就行
+    switch (m_family) {
+        case AF_INET:
+            result.reset(new Ipv4Address);
+            break;
+        case AF_INET6:
+            result.reset(new Ipv6Address);
+            break;
+        case AF_UNIX:
+            result.reset(new UnixAddress);
+            break;
+        default:
+            result.reset(new UnknownAddress(m_family));
+            break;
+    }
+
+    socklen_t addrLen = result->getAddrLen();
+    if (getpeername(m_socket, result->getAddr(), &addrLen)) {
+        SPDLOG_LOGGER_ERROR(Logger, "getRemoteAddress failed, socket = {} errno = {} strerrno = {}", m_socket, errno, strerror(errno));
+        // 获取失败返回未知地址
+        return Address::ptr(new UnknownAddress(m_family));
+    }
+
+    // 如果是unix域地址，则需要设置地址长度
+    if (m_family == AF_UNIX) {
+        // 由于设置地址长度的函数是在UnixAddress类中的（不是virtual），所以需要将result转换为UnixAddress类型
+        UnixAddress::ptr addr = std::dynamic_pointer_cast<UnixAddress>(result);
+        addr->setAddrLen(addrLen);
+    }
+
+    m_remoteAddress = result;
+    return m_remoteAddress;
+}
+
+Address::ptr Socket::getLocalAddress() {
+    if (m_localAddress) {
+        return m_localAddress;
+    }
+    
+    Address::ptr result;
+
+    switch (m_family) {
+        case AF_INET:
+            result.reset(new Ipv4Address);
+            break;
+        case AF_INET6:
+            result.reset(new Ipv6Address);
+            break;
+        case AF_UNIX:
+            result.reset(new UnixAddress);
+            break;
+        default:
+            result.reset(new UnknownAddress(m_family));
+            break;
+    }
+
+    socklen_t addrLen = result->getAddrLen();
+    if (getsockname(m_socket, result->getAddr(), &addrLen)) {
+        SPDLOG_LOGGER_ERROR(Logger, "getLocalAddress failed, socket = {} errno = {} strerrno = {}", m_socket, errno, strerror(errno));
+        return Address::ptr(new UnknownAddress(m_family));
+    }
+
+    if (m_family == AF_UNIX) {
+        UnixAddress::ptr addr = std::dynamic_pointer_cast<UnixAddress>(result);
+        addr -> setAddrLen(addrLen);
+    }
+
+    m_localAddress = result;
+    return m_localAddress;
+}
+
+int Socket::getSocket() const {
+    return m_socket;
+}
+
+int Socket::getFamily() const {
+    return m_family;
+}
+
+int Socket::getType() const {
+    return m_type;
+}
+
+int Socket::getProtocol() const{
+    return m_protocol;
+}
+
+bool Socket::isConnected() const{
+    return m_isConnected;
+}
+
+bool Socket::isValid() const {
+    return m_socket!=-1;
+}
+
+int Socket::getError() {
+    int error;
+    size_t errorLen = sizeof(int);
+    // 判断逻辑和原项目正相反，原项目应该是写错了。
+    if (!getOption(SOL_SOCKET, SO_ERROR, &error, &errorLen)) {
+        return -1;
+    }
+    return error;
+}
+
+// 打印套接字的详细信息
+std::ostream& Socket::dump(std::ostream& os) const {
+    os << "[socket sock=" << m_socket
+        << " is_connected=" << m_isConnected
+        << " family=" << m_family
+        << " type=" << m_type
+        << " protocol=" << m_protocol;
+    if (m_remoteAddress) {
+        os << " remote_address=" << m_remoteAddress->toString();
+    }
+    if (m_localAddress) {
+        os << " local_address=" << m_localAddress->toString();
+    }
+
+    os << "]";
+    return os;
 
 }
 
-Address::ptr Address::getLocalAddress() {
+// 将套接字的信息转换为字符串
+std::string Socket::toString() const {
+    std::stringstream ss;
+    dump(ss);
+    return ss.str();
+}
 
+bool Socket::cancelRead() {
+
+}
+
+bool Socket::cancelWrite() {
+
+}
+
+bool Socket::cancelAccept() {
+
+}
+
+bool Socket::cancelAll() {
+
+}
+
+
+// 创建TCP/UDP套接字
+Socket::ptr Socket::CreateTCP(Address::ptr address) {
+    ptr result(new Socket(address->getFamily(), TCP, 0));
+    return result;
+}
+
+Socket::ptr Socket::CreateUDP(Address::ptr address) {
+    ptr result(new Socket(address->getFamily(), UDP, 0));
+    return result;
+}
+
+// 不绑定地址
+Socket::ptr Socket::CreateTCPSocket() {
+    // 调用构造函数，创建一个新的Socket对象
+    // 参数使用枚举类型的值，这样可以避免传入错误的值
+    ptr result(new Socket(IPV4, TCP, 0));
+    return result;
+}
+
+Socket::ptr Socket::CreateUDPSocket() {
+    ptr result(new Socket(IPV4, UDP, 0));
+    return result;
+}
+
+// 创建IPv6套接字
+Socket::ptr Socket::CreateTCPSocket6() {
+    ptr result(new Socket(IPV6,TCP,0));
+    return result;
+}
+
+Socket::ptr Socket::CreateUDPSocket6() {
+    ptr result(new Socket(IPV6, UDP, 0));
+    return result;
+}
+
+// 创建Unix套接字
+Socket::ptr Socket::CreateUnixTCPSocket() {
+    ptr result(new Socket(UNIX, TCP, 0));
+    return result;
+}
+
+Socket::ptr Socket::CreateUnixUDPSocket() {
+    ptr result(new Socket(UNIX, UDP, 0));
+    return result;
 }
 
 }

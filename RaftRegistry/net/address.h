@@ -250,10 +250,15 @@ public:
     const sockaddr* getAddr() const override;
     sockaddr* getAddr() override;
     const socklen_t getAddrLen() const override;
+    void setAddrLen(uint32_t len);
     std::ostream& insert(std::ostream& out) override;
 
 private:
     sockaddr_un m_addr;
+
+    // 给unix域套接字地址结构体添加长度成员
+    // 原因：因为 Unix 域套接字（AF_UNIX）的地址长度不是固定的，虽然最大值是确定的（最大108），但是具体地址需要取决于套接字路径的长度。
+    // 而ipv4和ipv6的地址长度是固定的，所以不需要添加长度成员
     socklen_t m_length;
 };
 
