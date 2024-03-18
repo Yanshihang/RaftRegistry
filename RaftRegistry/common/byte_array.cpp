@@ -568,11 +568,13 @@ uint64_t ByteArray::getWriteBuffers(std::vector<iovec>& buffers, uint64_t len) {
         return 0;
     }
     auto size = len;
+
+    // 根据传入的len，添加链表的容量
     addCapacity(len);
 
-    size_t nodePos = m_position % m_nodeSize;
-    size_t nodeCap = m_nodeSize - nodePos;
-    Node* current = m_current;
+    size_t nodePos = m_position % m_nodeSize; // position在当前节点中的位置
+    size_t nodeCap = m_nodeSize - nodePos; // 当前节点的可用容量
+    Node* current = m_current; // 当前所在节点
     iovec iov;
 
     while(len) {

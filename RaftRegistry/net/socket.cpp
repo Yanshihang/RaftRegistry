@@ -19,47 +19,6 @@ Socket::~Socket() {
     close();
 }
 
-// 创建TCP/UDP套接字
-
-Socket::ptr Socket::CreateTCP(Address::ptr address) {
-
-}
-
-Socket::ptr Socket::CreateUDP(Address::ptr address) {
-
-}
-
-// 不绑定地址
-
-Socket::ptr Socket::CreateTCPSocket() {
-
-}
-
-Socket::ptr Socket::CreateUDPSocket() {
-
-}
-
-// 创建IPv6套接字
-
-Socket::ptr Socket::CreateTCPSocket6() {
-
-}
-
-Socket::ptr Socket::CreateUDPSocket6() {
-
-}
-
-// 创建Unix套接字
-
-Socket::ptr Socket::CreateUnixTCPSocket() {
-
-}
-
-Socket::ptr Socket::CreateUnixUDPSocket() {
-
-}
-
-
 // 发送和接收超时的获取和设置
 
 void Socket::setSendTimeout(uint64_t time) {

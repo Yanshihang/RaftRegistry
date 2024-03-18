@@ -268,6 +268,7 @@ public:
  */
 template <typename T, typename FromStr = LexicalCast<T, std::string>, typename ToStr = LexicalCast<std::string, T>>
 class ConfigVar : public ConfigVarBase {
+public:
     using ptr = std::shared_ptr<ConfigVar>;
     // 定义回调函数类型，用于在配置项改变时通知相关的监听者;
     // 回调函数的参数是当前值和改变之后的值
@@ -445,7 +446,7 @@ public:
 
     template <typename T>
     static typename ConfigVar<T>::ptr LookUp(const std::string& name, const T& value, const std::string& description) {
-        std::unique_lock<co_wmutex> lock(GetMutex().Reader());
+        std::unique_lock<co_wmutex> lock(GetMutex().Writer());
         auto iter = GetDatas().find(name);
 
         // 如果name已经存在，返回该对象的智能指针
@@ -470,7 +471,7 @@ public:
 
         // 实现创建与添加功能
         // 如果没找到name，且name的命名合法，就创建一个新的ConfigVar<T>对象，并加入到映射中
-        auto v = std::make_shared(ConfigVar<T>>(value,name,description));
+        auto v = std::make_shared(ConfigVar<T>(value,name,description));
         GetDatas()[name] = v;
         return v;
     }
