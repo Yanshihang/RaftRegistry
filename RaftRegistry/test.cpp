@@ -14,5 +14,5 @@ class B: public A{
 };
 
 int main() {
-    
+    cout << sizeof();
 }
