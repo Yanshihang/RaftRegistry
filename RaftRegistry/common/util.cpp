@@ -77,8 +77,8 @@ std::string BackTraceToString(int size, int skip, const std::string& prefix) {
     BackTrace(size,skip,bt_vector);
 
     std::stringstream ss;
-    for (const auto& i : bt_vector) {
-        ss << prefix << '\n';
+    for (size_t i = 0;i<bt_vector.size();++i) {
+        ss << prefix << bt_vector[i] << '\n';
     }
     return ss.str();
 }

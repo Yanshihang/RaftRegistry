@@ -50,7 +50,7 @@ bool TcpServer::bind(const std::vector<Address::ptr>& addrs, std::vector<Address
         return false;
     }
 
-    for (const auto& i : m_listens) {
+    for ( auto& i : m_listens) {
         SPDLOG_LOGGER_INFO(Logger, "server {} bind {} success", m_name, i->toString());
     }
     return true;

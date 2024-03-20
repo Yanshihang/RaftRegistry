@@ -145,6 +145,11 @@ public:
     std::string toString();
 
 private:
+    /**
+     * @brief 将字符串解析为Uri对象的不同部分
+     * 
+     * @return Task<bool> 
+     */
     Task<bool> parse();
     bool isDefaultPort() const;
 

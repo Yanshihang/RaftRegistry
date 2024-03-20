@@ -206,7 +206,7 @@ int HttpParser::hasError() {
 void HttpParser::setError(Error err) { m_error = err;}
 
 uint64_t HttpRequestParser::getContentLength() {
-    return m_data->getHeaderAs<uint64_t>("content-type", 0);
+    return m_data->getHeaderAs<uint64_t>("content-length", 0);
 }
 
 
@@ -454,7 +454,7 @@ Task<HttpParser::Error> HttpRequestParser::parse_chunk() {
 }
 
 uint64_t HttpResponseParser::getContentLength() {
-    return m_data->getHeaderAs<uint64_t>("content-type", 0);
+    return m_data->getHeaderAs<uint64_t>("content-length", 0);
 }
 
 bool HttpResponseParser::isChunked() {
@@ -671,7 +671,7 @@ Task<HttpParser::Error> HttpResponseParser::parse_chunk()  {
             co_return INVALID_CHUNK;
         }
 
-        // 如果len为0，表示chunk解析完成
+        // 如果len为0，表示所有数据都已接收，chunk解析完成
         if (!len) {
             break;
         }

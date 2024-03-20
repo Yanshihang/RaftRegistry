@@ -76,7 +76,7 @@ public:
         YAML::Node node = YAML::Load(from); // YAML::Load(str) 将输入的字符串 str 解析为一个 YAML::Node
         std::vector<To> res;
         std::stringstream ss;
-        for (const auto& i : node) {
+        for ( auto i : node) {
             ss.str(""); // 清空ss
             ss << i; // YAML库定义了全局的<<yun运算符，可以将YAML::Node类型的数据输出到流中
             res.push_back(LexicalCast<To,std::string>()(ss.str()));
@@ -93,8 +93,8 @@ template <typename From>
 class LexicalCast<std::string, std::vector<From>> {
 public:
     std::string operator() (const std::vector<From>& from) {
-        YAML:Node node;
-        for (const auto& i : from) {
+        YAML::Node node;
+        for ( auto& i : from) {
             node.push_back(YAML::Load(LexicalCast<std::string, From>()(i)));
         }
         std::stringstream ss;
@@ -110,7 +110,7 @@ public:
         YAML::Node node = YAML::Load(from);
         std::list<To> lis;
         std::stringstream ss;
-        for (const auto& i : node) {
+        for ( auto i : node) {
             ss.str("");
             ss << i;
             lis.push_back(LexicalCast<To, std::string>()(ss.str()));
@@ -124,7 +124,7 @@ class LexicalCast<std::string, std::list<From>> {
 public:
     std::string operator() (const std::list<From>& from) {
         YAML::Node node;
-        for (const auto& i : from) {
+        for (auto& i : from) {
             node.push_back(YAML::Load(LexicalCast<std::string, From>()(i)));
         }
         std::stringstream ss;
@@ -140,7 +140,7 @@ public:
         YAML::Node node = YAML::Load(from);
         std::set<To> res;
         std::stringstream ss;
-        for (const auto& i : node) {
+        for (auto i : node) {
             ss.str("");
             ss << i;
             res.template emplace((LexicalCast<To, std::string>()(ss.str())));
@@ -154,7 +154,7 @@ class LexicalCast<std::string, std::set<From>> {
 public:
     std::string operator() (const std::set<From>& from) {
         YAML::Node node;
-        for (const auto& i : from) {
+        for (auto& i : from) {
             node.push_back(YAML::Load(LexicalCast<std::string, From>()(i)));
         }
         std::stringstream ss;
@@ -170,7 +170,7 @@ public:
         YAML::Node node  = YAML::Load(from);
         std::unordered_set<To> res;
         std::stringstream ss;
-        for (const auto& i : node) {
+        for (auto i : node) {
             ss.str("");
             ss << i;
             res.template emplace(LexicalCastTo, std::string>()(ss.str()));
@@ -184,7 +184,7 @@ class LexicalCast<std::string, std::unordered_set<From>> {
 public:
     std::unordered_set<To> operator() (const std::unordered_set& from) {
         YAML::Node node;
-        for (const auto& i : from) {
+        for ( auto& i : from) {
             node.push_back(YAML::Load(LexicalCast<std::string, From>()(i)));
         }
         std::stringstream ss;
@@ -200,7 +200,7 @@ public:
         YAML::Node node = YAML::Load(from);
         std::map<std::string, To> res;
         std::stringstream ss;
-        for (const auto& i : node) {
+        for (auto i : node) {
             ss.str("");
             ss << i.second;
             // Scalar() 是 YAML::Node 的一个成员函数，它返回节点的标量值。如果节点是一个标量节点，那么 Scalar() 将返回该标量的字符串表示。
@@ -216,7 +216,7 @@ class LexicalCast<std::string, std::map<std::string, From>> {
 public:
     std::string operator() (const std::map<std::string, From>& from) {
         YAML::Node node;
-        for (const auto& i : from) {
+        for ( auto& i : from) {
             node[i.first] = YAML::Load(LexicalCast<std::string, From>()(i.second));
         }
         std::stringstream ss;
@@ -232,7 +232,7 @@ public:
         YAML::Node node = YAML::Load(from);
         std::stringstream ss;
         std::unordered_map<std::string, To> res;
-        for (const auto& i : node) {
+        for (auto i : node) {
             ss.str("");
             ss << i.second;
             res.emplace(i.first.Scalar(),LexicalCast<To, std::string>()(ss.str()));
@@ -246,7 +246,7 @@ class LexicalCast<std::string, std::unordered_map<std::string, From>> {
 public:
     std::string operator() (const std::unordered_map<std::string, From>& from) {
         YAML::Node node;
-        for (const auto& i : from) {
+        for (auto& i : from) {
             node[i.first] = YAML::Load(LexicalCast<std::string, From>()(i.second));
         }
         std::stringstream ss;
@@ -340,7 +340,7 @@ public:
             if (value = m_val) {
                 return;
             }
-            for (const auto& i : m_callbacks) {
+            for (auto& i : m_callbacks) {
                 i.second(m_val,value);
             }
         }

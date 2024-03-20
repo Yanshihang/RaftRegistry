@@ -5,9 +5,9 @@
 #ifndef RR_SOCKET_STREAM_H
 #define RR_SOCKET_STREAM_H
 
-#include "RaftRegistry/net/socket.h"
 #include <memory>
 #include <vector>
+#include "RaftRegistry/net/socket.h"
 #include "RaftRegistry/common/stream.h"
 
 

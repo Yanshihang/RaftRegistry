@@ -198,7 +198,7 @@ std::ostream& HttpRequest::dump(std::ostream& os) const {
     }
 
     // 遍历请求头，将请求头写入请求行
-    for (const auto& i : m_headers) {
+    for ( auto& i : m_headers) {
         // 如果请求头中有connection字段，且不是websocket请求，跳过（因为前面已经写入了connection字段）
         if (!m_websocket && strcasecmp(i.first.c_str(), "connection") == 0) {
             continue;

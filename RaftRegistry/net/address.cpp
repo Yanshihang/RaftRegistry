@@ -44,7 +44,7 @@ IpAddress::ptr Address::LookUpAnyIpAddress(const std::string& host, int family, 
     // 使用result存储LookUp中满足条件的Address
     std::vector<Address::ptr> result;
     if (LookUp(result, host, family, type, protocol)) {
-        for (const auto& i : result) {
+        for ( auto& i : result) {
             IpAddress::ptr v = std::dynamic_pointer_cast<IpAddress>(i);
             if (v) {
                 return v;

@@ -28,7 +28,7 @@ void Config::LoadFromFile(const std::string& path) {
 void Config::LoadFromYaml(const YAML::Node& node) {
     std::list<std::pair<std::string, YAML::Node>> allNodes;
     ListAllMembers("", node, allNodes);
-    for (const auto& i : allNodes) {
+    for (auto& i : allNodes) {
         std::string key = i.first;
         if (key.empty()) {
             continue;
@@ -65,7 +65,7 @@ static void ListAllMembers(const std::string& prefix, const YAML::Node& node, st
     }
     result.emplace_back(prefix, node);
     if (node.IsMap()) {
-        for (const auto& i : node) {
+        for (auto& i : node) {
             std::string name = prefix.empty() ? i.first.Scalar() : prefix + "." + i.first.Scalar();
             
             // 递归调用ListAllMembers，以遍历所有节点
@@ -77,7 +77,7 @@ static void ListAllMembers(const std::string& prefix, const YAML::Node& node, st
 void Config::Visit(std::function<void(ConfigVarBase::ptr)> cb) {
     // 获取所有的ConfigVarMap，然后遍历执行回调函数
     auto& configMap = GetDatas();
-    for (const auto& i : configMap) {
+    for (auto& i : configMap) {
         cb(i.second);
     }
 }

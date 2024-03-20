@@ -39,12 +39,12 @@ namespace RR {
         return len;
     }
 
-    ssize_t Stream::writeFixSize(void* buffer, size_t len) {
+    ssize_t Stream::writeFixSize(const void* buffer, size_t len) {
         auto offset = 0;
         auto left = len;
 
         while(left) {
-            auto writeSize = write(static_cast<char*>(buffer),left);
+            auto writeSize = write(static_cast<const char*>(buffer),left);
             if (writeSize <= 0) {
                 return writeSize;
             }

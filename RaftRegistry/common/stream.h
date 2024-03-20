@@ -43,7 +43,7 @@ public:
      * @param len 要写入的长度
      * @return ssize_t 
      */
-    virtual ssize_t write(void* buffer, size_t len) = 0;
+    virtual ssize_t write(const void* buffer, size_t len) = 0;
 
     /**
      * @brief 将ByteArray中的数据写入到流中
@@ -60,7 +60,7 @@ public:
      */
     ssize_t readFixSize(void* buffer, size_t len);
     ssize_t readFixSize(ByteArray::ptr buffer, size_t len);
-    ssize_t writeFixSize(void* buffer, size_t len);
+    ssize_t writeFixSize(const void* buffer, size_t len);
     ssize_t writeFixSize(ByteArray::ptr buffer, size_t len);
 
 
