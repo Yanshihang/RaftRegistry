@@ -122,6 +122,13 @@ void Uri::setFragment(const std::string& fragment) {
     m_fragment = fragment;
 }
 
+/*
+ foo://user@hostname:8080/over/there?name=ferret#nose
+   \_/   \______________/\_________/ \_________/ \__/
+    |           |            |            |        |
+ scheme     authority       path        query   fragment
+*/
+
 std::ostream& Uri::dump(std::ostream& os) const {
     // 如果m_scheme为空，则直接进行下面的输出操作，如果不为空则按照协议格式输出
     if (!m_scheme.empty()) {
@@ -182,6 +189,23 @@ static inline bool IsValid(const char* p) {
 // 如果 yield 已经定义，将导致编译错误，并显示消息 "yield already defined"
 #error "yield already defined"
 #endif
+
+/**
+* 常规uri格式
+*      foo://user@hostname.com:8080/over/there?name=ferret#nose
+*        \_/   \__________________/\_________/ \_________/ \__/
+*        |           |                |            |        |
+*     scheme     authority          path        query   fragment
+* URI语法如下
+* ([]表示可有可无)
+* [ scheme : ] scheme-specific-part[ # fragment]
+* 其中scheme-specific-part结构如下，其中//可以没有
+*  [ //][ authority][ path][ ? query]
+*  其中authority结构如下,注意：如果URI中存在authority字段，那么必有host字段
+* [ user-info @] host [ : port]
+* 所以URI结构如下
+* [ scheme :][ user-info @] host [ : port][ path][ ? query][ # fragment]
+*/
 
 // 定义一个协程挂起宏，用于挂起协程，并且检查协程恢复后的指针是否为空，此时指针已经指向挂起之前的下一个字符
 // 只要m_cur不为空，就证明解析还没有结束，继续解析；如果为空则证明字符串不合法，解析失败

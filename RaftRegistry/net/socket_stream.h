@@ -23,7 +23,7 @@ public:
     bool isConnected() const;
 
     // 得到内部的Socket指针
-    Socket::ptr get() const;
+    Socket::ptr getSocket() { return m_socket;}
 
     // 重写Stream类的read方法，用于读取数据到指定的buffer中，长度为length
     // 实现逻辑是调用内部Socket对象的recv方法接收数据
@@ -31,10 +31,10 @@ public:
 
     // 重写Stream类的read方法，用于读取数据到ByteArray对象中，长度为length
     // 实现逻辑是准备iovec结构体数组，然后调用Socket的recv方法，并更新ByteArray对象的写位置
-    ssize_t read(ByteArray::ptr buffer, size_t len);
+    ssize_t read(ByteArray::ptr buffer, size_t len) override;
 
-    ssize_t write(void* buffer, size_t len);
-    ssize_t write(ByteArray::ptr buffer, size_t len);
+    ssize_t write(const void* buffer, size_t len) override ;
+    ssize_t write(ByteArray::ptr buffer, size_t len) override ;
 
     void close();
 

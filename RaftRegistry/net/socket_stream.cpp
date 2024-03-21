@@ -39,7 +39,7 @@ ssize_t SocketStream::read(ByteArray::ptr buffer, size_t len) {
     return -1;
 }
 
-ssize_t SocketStream::write(void* buffer, size_t len) {
+ssize_t SocketStream::write(const void* buffer, size_t len) {
     if (isConnected()) {
         return m_socket->send(buffer, len);
     }

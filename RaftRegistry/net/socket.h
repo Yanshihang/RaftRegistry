@@ -9,7 +9,7 @@
 #include <ostream>
 #include <sys/time.h>
 
-#include <RaftRegistry/net/address.h>
+#include "RaftRegistry/net/address.h"
 
 namespace RR {
 

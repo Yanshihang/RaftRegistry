@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <list>
+#include <mutex>
 #include "RaftRegistry/http/http.h"
 #include "RaftRegistry/net/socket_stream.h"
 #include "RaftRegistry/net/uri.h"
@@ -26,6 +27,7 @@ public:
         CREATE_SOCKET_ERROR,
         CONNECT_FAIL,
         SEND_CLOSE_BY_PEER,
+        SEND_SOCKET_ERROR,
         TIMEOUT,
         POOL_INVALID_CONNECTION,
     };
@@ -55,6 +57,10 @@ public:
     // 构造函数，用于初始化一个Http连接
     HttpConnection(Socket::ptr socket, bool owner = true);
     ~HttpConnection();
+
+    // 下面函数的返回值是HttpResult::ptr类型的智能指针
+    // 这个类型中的数据成员有一个是HttpResponse::ptr类型的智能指针
+    // 有这个数据成员，是因为连接过程有三次握手，发送请求之后必须得到响应，才算是连接成功。
 
     /**
      * @brief 执行HTTP GET请求
@@ -157,6 +163,7 @@ public:
     // 创建连接池实例
     static HttpConnectionPool::ptr Create( const std::string& uri, const std::string& vhost, uint32_t maxSize, uint32_t maxAliveTime, uint32_t maxRequest);
 
+    // 通过连接池执行一个HTTP GET请求
     HttpResult::ptr doGet(const std::string& url, uint64_t timeoutMs = -1, const std::map<std::string, std::string>& header = {}, const std::string& body = "");
     HttpResult::ptr doGet(Uri::ptr uri, uint64_t timeoutMs = -1, const std::map<std::string, std::string>& header = {}, const std::string& body = "");
     HttpResult::ptr doPost(const std::string& url, uint64_t timeoutMs = -1, const std::map<std::string, std::string>& header = {}, const std::string& body = "");
@@ -165,10 +172,10 @@ public:
     HttpResult::ptr doRequest(HttpMethod method, Uri::ptr uri, uint64_t timeoutMs = -1, const std::map<std::string, std::string>& header = {}, const std::string& body = "");
     HttpResult::ptr doRequest(HttpRequest::ptr request, uint64_t timeoutMs = -1);
 
-    // 获取一个连接
+    // 从连接池中获取一个可用的HttpConnection对象
     HttpConnection::ptr getConnection();
 private:
-    // 用于释放连接
+    // 释放或回收HttpConnection对象到连接池
     static void ReleasePtr(HttpConnection* ptr, HttpConnectionPool* pool);
 
     // 主机名
@@ -188,7 +195,7 @@ private:
     // 互斥锁
     MutexType m_mutex;
     // 连接列表
-    std::list<HttpConnection::ptr> m_conns;
+    std::list<HttpConnection*> m_conns;
     // 总连接数
     std::atomic<uint32_t> m_total{0};
 };

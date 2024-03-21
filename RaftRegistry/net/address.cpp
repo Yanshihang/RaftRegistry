@@ -260,7 +260,7 @@ Ipv4Address::ptr Ipv4Address::Create(const char* ip, uint16_t port) {
     Ipv4Address::ptr result(new Ipv4Address);
     result->m_addr.sin_port = EndianCast(port);
     int error = inet_pton(AF_INET, ip, &(result->m_addr.sin_addr)); // Fix the undefined identifier error
-    if (error) {
+    if (error <= 0) {
         SPDLOG_LOGGER_DEBUG(Logger,"IPv4Address::Create({},{}) rt={} errno={} errstr={}",ip, port, result, errno, gai_strerror(errno));
         return nullptr;
     }
@@ -346,7 +346,7 @@ Ipv6Address::ptr Ipv6Address::Create(const char* ip, uint16_t port = 0) {
     Ipv6Address::ptr result(new Ipv6Address);
     result->m_addr.sin6_port = HostToNetwork(port);
     int error = inet_pton(AF_INET6, ip, &result->m_addr.sin6_addr);
-    if (result) {
+    if (error <= 0) {
         SPDLOG_LOGGER_DEBUG(Logger,"IPv6Address::Create({},{}) result={} errno={} errstr={}",ip, port, result, errno, gai_strerror(errno));
         return nullptr;
     }
