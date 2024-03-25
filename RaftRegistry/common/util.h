@@ -116,14 +116,14 @@ private:
  * @brief 创建一个定时器
  * 
  * @param interval_ms 循环定时器的间隔时间ms
- * @param times 循环次数
  * @param callback 回调函数
  * @param scheduler 协程调度器（调用第三方libgo库）
+ * @param times 循环次数
  * @return CycleTimerTocken 
  * 
  * @details 开启一个协程，并使用scheduler调度器对协程进行调度；每过interval_ms的时间就调用一次callback，共调用times次。
  */
-CycleTimerTocken CycleTimer(unsigned interval_ms, int times = -1, std::function<void()> callback, co::Scheduler* scheduler = nullptr);
+CycleTimerTocken CycleTimer(unsigned interval_ms, std::function<void()> callback, co::Scheduler* scheduler = nullptr, int times = -1);
 
 } // namespace RR
 

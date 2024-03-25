@@ -27,8 +27,8 @@ public:
      * 
      * @details Node结构体定义了一个内存块的相关信息，包括：
      *          - 内存块的地址指针
-     *          - 下一个内存块的地址
-     *          - 内存块的大小
+     *          - 下一个node的地址
+     *          - node的大小
      *          ByteArray类通过使用Node结构体来管理内存块的分配和释放。
      *          通过Node结构体的链表形式，ByteArray类能够有效地管理和操作字节数组的存储。
      */
@@ -117,14 +117,19 @@ public:
     void writeDouble(double value);
 
     /**
-     * @brief 写入字符串
-     * 
-     * @param value 
+     * @brief 写入std::string类型的数据,用uint16_t作为长度类型
+     * @post m_position += 2 + value.size()
+     *       如果m_position > m_size 则 m_size = m_position
      */
     void writeStringF16(const std::string& value);
     void writeStringF32(const std::string& value);
     void writeStringF64(const std::string& value);
     void writeStringVint(const std::string& value);
+    /**
+     * @brief 写入std::string类型的数据,无长度
+     * @post m_position += value.size()
+     *       如果m_position > m_size 则 m_size = m_position
+     */
     void writeStringWithoutLength(const std::string& value);
 
     // 读取数据
@@ -220,6 +225,8 @@ public:
      * @return uint64_t 返回实际可写入数据的长度
      */
     uint64_t getWriteBuffers(std::vector<iovec>& buffers, uint64_t len);
+
+    size_t getSize() const { return m_size;}
 
     // 清空ByteArray中的数据
     void clear();

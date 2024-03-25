@@ -30,7 +30,8 @@ struct function_traits;
  */
 template <typename ReturnType, typename... Args>
 struct function_traits<ReturnType(Args...)> {
-    constexpr int typeNum = sizeof...(Args);
+    constexpr int arity = sizeof...(Args);
+    using return_type = ReturnType;
     using function_type = ReturnType(Args...);
     using stl_function_type = std::function<function_type>;
     using function_pointer_type = ReturnType(*)(Args...);
@@ -65,7 +66,7 @@ struct function_traits<std::function<ReturnType(Args...)>> : function_traits<Ret
 /**
  * @brief function_traits特化：用于提取函数对象（可调用对象）的特性
  */
-templage <typename Callable>
+template <typename Callable>
 struct function_traits : function_traits<decltype(&Callable::operator())> {};
 
 

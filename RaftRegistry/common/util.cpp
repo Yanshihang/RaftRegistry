@@ -103,7 +103,7 @@ void CycleTimerTocken::stop() const {
     *cancel = true;
 }
 
-CycleTimerTocken CycleTimer(unsigned interval_ms, int times, std::function<void()> callback, co::Scheduler* scheduler) {
+CycleTimerTocken CycleTimer(unsigned interval_ms, std::function<void()> callback, co::Scheduler* scheduler, int times) {
     // 如果没有传入调度器，则使用当前协程所在的调度器；
     // 如果当前进程调度器获取失败，则使用全局调度器
     if (!scheduler) {
