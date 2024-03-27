@@ -128,7 +128,7 @@ public:
         static_assert(!std::is_pointer_v<T>); // 传入的数据类型不能是指针
 
         // 如果T是bool、char或unsigned char类型，则直接读取int8_t类型的数据，即调用readFInt8
-        if constexpr (std:is_same_v<T, bool> || std::is_same_v<T, char> || std::is_same_v<T, unsigned char>) {
+        if constexpr (std::is_same_v<T, bool> || std::is_same_v<T, char> || std::is_same_v<T, unsigned char>) {
             t = m_byteArray->readFInt8();
         } else if constexpr (std::is_same_v<T, float>) { // 如果T是float类型，则读取float类型的数据
             t = m_byteArray->readFloat();
@@ -234,7 +234,7 @@ public:
         // 反序列化std::tuple，使用折叠表达式展开参数包，并逐个反序列化
         const auto& deserializer = [this]<typename Tuple, std::size_t... Index>(Tuple& t, std::index_sequence<Index...>) {
             static_cast<void>((*this) >> ... >> std::get<Index>(t));
-        }
+        };
         deserializer(t, std::index_sequence_for<Args...>{});
         return *this;
     }

@@ -92,7 +92,7 @@ public:
     static Address::ptr Create(const sockaddr*, socklen_t addrlen);
 
     /**
-     * @brief 通过host地址返回对应条件的所有Address
+     * @brief 通过host地址返回对应条件的所有Address，即通过域名或者服务器名返回对应的地址
      * @param[out] result 保存满足条件的所有Address
      * @param[in] host 域名,服务器名等.举例: www.google.com[:80] (方括号为可选内容)
      * @param[in] family 协议族(AF_INT, AF_INT6, AF_UNIX)

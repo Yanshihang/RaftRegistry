@@ -68,10 +68,10 @@ public:
     template<typename T>
     void WriteFInt(T value) {
         // 判断要写入的值是否为host字节序
-        if (!m_endian == std::endian::native) {
-            value = ByteSwap(value)
+        if (!(m_endian == std::endian::native)) {
+            value = ByteSwap(value);
         }
-        write(&value, sizeof(value))
+        write(&value, sizeof(value));
     }
 
     void writeFInt8(int8_t value);

@@ -74,7 +74,7 @@ public:
         using argsType = std::tuple<typename std::decay<Params>::type...>;
         argsType args = std::make_tuple(params...);
         Serializer s;
-        ss << name << args;
+        s << name << args;
         s.reset();
         return call<R>(s);
     }
@@ -95,11 +95,11 @@ public:
     template <typename... Params>
     void callback(const std::string& name, Params&&... params) {
         // 确保至少有一个参数，这个参数应该是回调函数
-        static_assert(sizeof...(ps), "without a callback function");
+        static_assert(sizeof...(params), "without a callback function");
         // 使用tuple存储所有参数
         auto tp = std::make_tuple(params...);
         // 获取元组大小，即参数个数
-        constexpr auto size = std::tuple_size<typename std::decay<decltype(tp)>::type>value;
+        constexpr auto size = std::tuple_size<typename std::decay<decltype(tp)>::type>::value;
         // 获取最后一个元素，即回调函数
         auto cb = std::get<size-1>(tp);
         // 检查回调函数的形参数量是否为1，不是则编译失败

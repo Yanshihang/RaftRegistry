@@ -35,6 +35,7 @@ Address::ptr Address::LookUpAny(const std::string& host, int family, int type, i
     // 使用result存储LookUp中满足条件的所有Address
     std::vector<Address::ptr> result;
     if (LookUp(result, host, family, type, protocol)) {
+        // 返回第一个满足条件的Address
         return result[0];
     }
     return nullptr;

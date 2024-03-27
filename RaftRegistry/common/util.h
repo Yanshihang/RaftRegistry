@@ -95,7 +95,7 @@ std::string BackTraceToString(int size, int skip = 2, const std::string& prefix 
  * @param skip 跳过的栈帧的层数
  * @param bt 存储函数调用栈中的信息
  */
-void BackTrace(int size, int skip = 1, std::vector<std::string>& bt);
+void BackTrace(std::vector<std::string>& bt, int size, int skip = 1);
 
 class CycleTimerTocken {
 public:

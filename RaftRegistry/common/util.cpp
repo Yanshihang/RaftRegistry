@@ -47,7 +47,7 @@ std::shared_ptr<spdlog::logger> GetLoggerInstance() {
 }
 
 
-void BackTrace(int size, int skip, std::vector<std::string>& bt) {
+void BackTrace(std::vector<std::string>& bt, int size, int skip) {
     auto funcCallStackArr = static_cast<void **>(new void* [size]);
     auto funcCallStackLength = backtrace(funcCallStackArr,size);
     char** stackString = backtrace_symbols(funcCallStackArr,funcCallStackLength);

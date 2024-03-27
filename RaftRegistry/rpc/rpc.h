@@ -61,6 +61,7 @@ template <typename T = void>
 class Result {
 public:
     using ptr = std::shared_ptr<Result>; // 定义Result的智能指针类型
+    // 如果T不是默认的，或者没有被指定为void类型，则rowType和returnType都是T，否则rowType是T，returnType是uint8_t
     using rowType = T; // 定义Result的原始类型
     using returnType = return_type_t<T>; // 定义Result的返回类型
     using msgType = std::string; // 用于存储消息的类型
