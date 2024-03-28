@@ -79,7 +79,7 @@ int64_t Persister::getRaftStateSize() {
     return length;
 }
 
-bool Persister::persist(const HardState& hs, const std::vector<Entry>& entries, const Snapshot::ptr snapshot = nullptr) {
+bool Persister::persist(const HardState& hs, const std::vector<Entry>& entries, const Snapshot::ptr snapshot) {
     std::unique_lock<MutexType> lock(m_mutex);
 
     // 打开文件，如果有此文件则打开后清空内容，如果没有则创建

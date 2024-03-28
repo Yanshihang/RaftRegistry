@@ -388,8 +388,9 @@ RequestVoteReply RaftNode::handleRequestVote(RequestVoteArgs request) {
     
     // 重点，成功投票后才重置选举定时器，这样有助于网络不稳定条件下选主的 liveness 问题
     // 例如：极端情况下，Candidate只能发送消息而收不到Follower的消息，Candidate会不断发起新
-    // 一轮的选举，如果节点在becomeFollower后马上重置选举定时器，会导致节点无法发起选举，该集群
-    // 无法选出新的 Leader。
+    // 一轮的选举，如果节点在becomeFollower后马上重置选举定时器，会导致节点无法发起选举。
+    // 该集群无法选出新的 Leader。
+    // （这里的意思是：如果candidate不断发起新的选举，那么follower会不断重置选举定时器，由于candidate收不到follower的消息，所以不会收到选举成功的消息，不会成为leader，而由于follower投票前就重置选举定时器，导致follower无法成为candidate，这样的话所有节点都卡住了，无法选出leader）
     // 只是重置定时器的时机不一样，就导致了集群无法容忍仅仅 1 个节点故障 
     rescheduleElection();
 
@@ -403,140 +404,303 @@ RequestVoteReply RaftNode::handleRequestVote(RequestVoteArgs request) {
 /**
  * @brief 处理远端 raft 节点的日志追加请求
  */
-AppendEntriesReply RaftNode::handleAppendEntries(AppendEntriesArgs request);
+AppendEntriesReply RaftNode::handleAppendEntries(AppendEntriesArgs request) {
+    std::unique_lock<Mutextype> lock(m_mutex);
+    AppendEntriesReply reply{};
+    co_defer_scope {
+        if (reply.success && m_logs.committed() < request.leaderCommit) {
+           // 更新提交索引，为什么取了个最小？committed是leader发来的，是全局状态，但是当前节点
+           // 可能落后于全局状态，所以取了最小值。last_index 是这个节点最新的索引， 不是最大的可靠索引，
+           // 如果此时节点异常了，会不会出现commit index以前的日志已经被apply，但是有些日志还没有被持久化？
+           // 这里需要解释一下，raft更新了commit index，raft会把commit index以前的日志交给使用者apply同时
+           // 会把不可靠日志也交给使用者持久化，所以这要求必须先持久化日志再apply日志，否则就会出现刚刚提到的问题。
+            m_logs.commitTo(std::min(request.leaderCommit, ,m_logs.lastIndex()));
+            m_applyCond.notify_one();
+        }
+        persist();
+        SPDLOG_LOGGER_TRACE(Logger, "Node[{}] before processing AppendEntriesArgs {} and reply AppendEntriesResponse {}, state is {}", m_id, request.toString(), reply.toString(), toString());
+    };
+    // 拒绝任期小于自己的 leader 的日志复制请求
+    if (request.term < m_currentTerm) {
+        reply.term = m_currentTerm;
+        reply.leaderId = m_leaderId;
+        reply.success = false;
+        return reply;
+    }
+
+    // 对方任期大于自己或者自己为同一任期内败选的候选人则转变为 follower
+    // 已经是该任期内的follower就不用变
+    if (request.term > m_currentTerm || (request.term == m_currentTerm && m_state == RaftState::Candidate)) {
+        becomeFollower(request.term, request.leaderId);
+    }
+
+    if (m_leaderId < 0) {
+        m_leaderId = request.leaderId;
+    }
+
+    // 自己为同一任期内的follower，更新选举定时器就行
+    rescheduleElection();
+    
+    // 拒绝错误的日志追加请求
+    // 如果对方的prevLogIndex小于快照的最后一个索引，说明对方的日志已经过时了
+    if (request.prevLogIndex < m_logs.lastSnapshotIndex()) {
+        reply.term = 0; // 表示相应无效
+        reply.leaderId = -1;
+        reply.success = false;
+        SPDLOG_LOGGER_DEBUG(Logger, "Node[{}] receives unexpected AppendEntriesArgs {} from Node[{}] because prevLogIndex {} < firstLogIndex {}", m_id, request.toString(), request.leaderId, request.prevLogIndex, m_logs.lastSnapshotIndex());
+        return reply;
+    }
+
+    // 获取append后的最后一个日志的索引
+    int64_t lastIndex = m_logs.maybeAppend(request.prevLogIndex, request.prevLogTerm, request.leaderCommit, request.entries);
+    
+    if (lastIndex < 0) {
+        // 尝试查找冲突的日志
+        int64_t conflict = m_logs.findConflict(request.prevLogIndex, request.prevLogTerm);
+        reply.term = m_currentTerm;
+        reply.leaderId = m_leaderId;
+        reply.success = false;
+        reply.nextIndex = conflict;
+        return reply;
+    }
+
+    reply.term = m_currentTerm;
+    reply.leaderId = m_leaderId;
+    reply.success = true;
+    reply.nextIndex = lastIndex + 1;
+    return reply;
+}
 
 /**
  * @brief 处理远端 raft 节点的快照安装请求
  */
-InstallSnapshotReply RaftNode::handleInstallSnapshot(InstallSnapshotArgs request);
+InstallSnapshotReply RaftNode::handleInstallSnapshot(InstallSnapshotArgs request) {
+    std::unique_lock<Mutextype> lock(m_mutex);
+    InstallSnapshotReply reply{};
+    // 在当前协程结束时，执行以下的代码块，打印一些调试信息
+    co_defer_scope {
+        SPDLOG_LOGGER_DEBUG(Logger, "Node[{}] before processing InstallSnapshotArgs {} and reply InstallSnapshotReply {}, state is {}", m_id, request.toString(), reply.toString(), toString());
+    };
 
-/**
- * @brief 增加raft节点
- * 
- * @param id 增加的节点id
- * @param address 增加的节点地址
- */
+    // 设置回复的任期和领导者ID为当前节点的任期和领导者ID
+    reply.term = m_currentTerm;
+    reply.leaderId = m_leaderId;
+
+    // 如果请求的任期小于当前节点的任期，直接返回回复
+    if (request.term < m_currentTerm) {
+        return reply;
+    }
+
+    // 如果请求的任期小于当前节点的任期，直接返回回复
+    if (request.term > m_currentTerm) {
+        becomeFollower(request.term, request.leaderId);
+    }
+
+    rescheduleElection();
+    // 更新回复的领导者ID为当前节点的领导者ID
+    reply.leaderId = m_leaderId;
+
+    const int64_t snapIndex = request.snapshot.metadata.index;
+    const int64_t snapTerm = request.snapshot.metadata.term;
+
+    // 如果快照的索引小于或等于已提交的日志的索引，忽略这个快照
+    if (snapIndex <= m_logs.committed()) {
+        SPDLOG_LOGGER_DEBUG(Logger,"Node[{}] ignored snapshot [index: {}, term: {}]", m_id, snapIndex, snapTerm);
+        return reply;
+    }
+
+    // 如果快照的索引和任期与日志中的匹配，快速前进到快照的索引
+    // 这里的逻辑是：检查节点的日志中是否有与快照相匹配的条目。如果有，那么这个节点的日志是最新的，只是它还没有提交（commit）到快照的索引位置。
+    if (m_logs.matchLog(snapIndex, snapTerm)) {
+        SPDLOG_LOGGER_DEBUG(Logger, "Node[{}] fast-forwarded to snapshot [index: {}, term: {}]", m_id, snapIndex, snapTerm);
+        m_logs.commitTo(snapIndex);
+        m_applyChan.notify_one();
+        return reply;
+    }
+    
+    // 开始恢复快照
+
+    SPDLOG_LOGGER_DEBUG(Logger, "Node[{}] starts to install snapshot [index: {}, term: {}]", m_id, snapIndex, snapTerm);
+    // 如果快照的索引大于日志的最后一个索引，清除所有的日志条目
+    // 如果快照中保存的最后一条日志的索引大于当前节点的日志的最后一个索引，这意味着当前节点的日志严重落后，甚至可能丢失了一些日志条目。
+    // 在这种情况下，最简单和最有效的方式是清除当前节点的所有日志条目，然后使用快照来更新节点的状态。
+    if (request.snapshot.metadata.index > m_logs.lastIndex()) {
+        m_logs.clearEntries(request.snapshot.metadata.index, request.snapshot.metadata.term);
+    } else { // 否则，压缩日志到快照的索引
+        m_logs.compact(request.snapshot.metadata.index);
+    }
+    // （上面这段判断逻辑的行为是：如果节点中的日志落后于快照，那么就清空日志，然后使用快照中的数据来更新节点的状态；如果节点中的日志不落后（持平或领先）快照，那么就删除快照之前的日志，然后使用快照中的数据来更新节点的状态。）
+    // 创建一个新的协程，将快照发送到应用通道
+    go [snap = request.snapshot, this] {
+        m_applychan << ApplyMsg{snap};
+    };
+    
+    persist(std::make_shared<Snapshot>(std::move(request.snapshot)));
+    return reply;
+}
+
 void RaftNode::addPeer(int64_t id, Address::ptr address) {
-
+    // 创建一个新的 RaftPeer 对象，使用给定的 id 和 address
+    RaftPeer::ptr peer = std::make_shared<RaftPeer>(id, address);
+    m_peers[id] = peer;
+    m_nextIndex[id] = 0;
+    m_matchIndex[id] = 0;
+    SPDLOG_LOGGER_DEBUG(Logger, "Node [{}] add peer [{}], address is {}", m_id, id, address->toString());
 }
 
-/**
- * @brief 返回当前节点是否是leader
- * 
- * @return true 当前节点是leader
- * @return false 当前节点不是leader
- */
-bool RaftNode::isLeader();
+bool RaftNode::isLeader() {
+    std::unique_lock<Mutextype> lock(m_mutex);
+    return m_state == RaftState::Leader;
+}
 
-/**
- * @brief 获取当前节点状态
- * 
- * @return currentTerm 任期，isLeader 是否为 leader
- */
-std::pair<int64_t, bool> RaftNode::getState();
+std::pair<int64_t, bool> RaftNode::getState() {
+    std::unique_lock<Mutextype> lock(m_mutex);
+    return {m_currentTerm, m_state == RaftState::Leader};
+}
 
-/**
- * @brief 获取当前节点的leader id
- * 
- * @return int64_t 
- */
-int64_t RaftNode::getLeaderId() const { return m_leaderId;}
+std::string RaftNode::toString() {
+    // 用于将节点状态映射为字符串
+    std::map<RaftState, std::string> mp{{Follower, "Follower"}, {Candidate, "Candidate"}, {Leader, "Leader"}};
+    std::string str = fmt.format("Id: {}, State: {}, LeaderId: {}, CurrentTerm: {}, VotedFor: {}, CommitIndex: {}, LastApplied: {}", m_id, mp[m_state], m_leaderId, m_currentTerm, m_votedFor, m_logs.committed(), m_logs.applied());
+    return "{" + str + "}";
+}
 
-/**
- * @brief 发起一条消息
- * @return 如果该节点不是 Leader 返回 std::nullopt
- */
-std::optional<Entry> RaftNode::propose(const std::string& data);
+void RaftNode::becomeFollower(int64_t term, int64_t leaderId) {
+    // 如果当前节点是领导者，则先停止心跳定时器
+    if (m_heartbeatTimer && m_state == Leader) {
+        m_heartbeatTimer.stop();
+    }
 
+    m_state = Follower;
+    m_currentTerm = term;
+    m_votedFor = -1;
+    m_leaderId = leaderId;
+    // 持久化当前节点的状态
+    persist();
+    SPDLOG_LOGGER_DEBUG(Logger, "Node [{}] become follower at term {}, state is {}", m_id, m_currentTerm, toString());
+}
+void RaftNode::becomeCandidate() {
+    m_state = Candidate;
+    ++m_currentTerm;
+    m_votedFor = m_id;
+    m_leaderId = -1;
+    persist();
+    SPDLOG_LOGGER_DEBUG(Logger, "Node [{}] become candidate at term {}, state is{}", m_id, m_currentTerm, toString());
+}
 
-/**
- * @brief 获取节点id
- * 
- * @return int64_t 
- */
-int64_t RaftNode::getNodeId() const { return m_id; }
+void RaftNode::becomeLeader() {
+    // 成为leader停止选举定时器
+    if (m_electionTimer) {
+        m_electionTimer.stop();
+    }
+    m_state = Leader;
+    m_leaderId = m_id;
+    // 成为领导者后，领导者并不知道其它节点的日志情况，因此与其它节点需要同步那么日志，领导者并不知道集群其他节点状态，
+    // 因此他选择了不断尝试。nextIndex、matchIndex 分别用来保存其他节点的下一个待同步日志index、已匹配的日志index。
+    // nextIndex初始化值为lastIndex+1，即领导者最后一个日志序号+1，因此其实这个日志序号是不存在的，显然领导者也不
+    // 指望一次能够同步成功，而是拿出一个值来试探。
+    // matchIndex初始化值为0，这个很好理解，因为他还未与任何节点同步成功过，所以直接为0
+    for (auto& peer : m_peers) {
+        m_nextIndex[peer.first] = m_logs.lastIndex() + 1;
+        m_matchIndex[peer.first] = 0;
+    }
 
-/**
- * @brief 持久化，加锁
- * 
- * @param index 将该index之前的日志都删除
- * @param snap 快照数据
- */
-void RaftNode::persistStateAndSnapshot(int64_t index, const std::string& snap);
+    persist();
+    SPDLOG_LOGGER_DEBUG(Logger, "Node [{}] become leader at term {}, state is {}", m_id, m_currentTerm, toString());
+}
 
-/**
- * @brief 持久化，加锁
- * 
- * @param snap 快照数据
- */
-void RaftNode::persistSnapshot(Snapshot::ptr snap);
+void RaftNode::rescheduleElection() {
+    // 停止当前的选举定时器
+    m_electionTimer.stop();
+    // 重新设置选举定时器，定时器的超时时间是一个随机的选举超时时间
+    m_electionTimer = CycleTimer(GetRandomizedElectionTimeout(), [this] {
+        std::unique_lock<Mutextype> lock(m_mutex);
+        // 如果当前节点的状态不是领导者，那么将其状态变为候选者，并开始新的选举
+        // 如果当前节点是领导者，则无需进行选举
+        if (m_state != RaftState::Leader) {
+            // 如果当前节点的状态不是领导者，那么将其状态变为候选者，并开始新的选举
+            becomeCandidate();
+            // 开始新的选举，这是一个异步操作，不会阻塞选举定时器
+            startElection();
+        }
+    });
+}
 
-    /**
- * @brief 以字符串格式输出raft节点状态
- * 
- * @return std::string 
- */
-std::string RaftNode::toString();
-
-/**
- * @brief 获取心跳超时时间
- * 
- * @return uint64_t 
- */
-static uint64_t RaftNode::GetStableHeartbeatTimeout();
-
-/**
- * @brief 获取随机选举时间
- * 
- * @return uint64_t 
- */
-static uint64_t RaftNode::GetRandomizedElectionTimeout();
-
-    /**
- * @brief 由candidate或leader转为follower
- * 
- * @param term 任期
- * @param leaderId 任期领导人id，如果还未选举出来则为-1
- */
-void RaftNode::becomeFollower(int64_t term, int64_t leaderId=  -1);
-
-/**
- * @brief 转为candidate
- */
-void RaftNode::becomeCandidate();
-
-/**
- * @brief 转为leader
- */
-void RaftNode::becomeLeader();
-
-/**
- * @brief 重置选举定时器
- */
-void RaftNode::rescheduleElection();
-
-/**
- * @brief 重置心跳定时器
- */
 void RaftNode::resetHeartbeatTimer() {
-
+    m_heartbeatTimer.stop();
+    m_heartbeatTimer = CycleTimer(GetRandomizedElectionTimeout(), [this] {
+        std::unique_lock<Mutextype> lock(m_mutex);
+        if (m_state == RaftState::Leader) {
+            broadcastHeartbeat();
+        }
+    });
 }
 
+static uint64_t RaftNode::GetStableHeartbeatTimeout() {
+    return s_timer_heartbeat;
+}
 
-    /**
- * @brief 持久化，内部调用，不加锁
- * 
- * @param snap 
- */
-void RaftNode::persist(Snapshot::ptr snap = nullptr);
+static uint64_t RaftNode::GetRandomizedElectionTimeout() {
+    static std::default_random_engine engine(RR::GetCuurentTimeMs());
+    static std::uniform_int_distribution<int64_t> dist(s_timer_election_base, s_timer_election_top);
+    return dist(engine);
+}
 
-/**
- * @brief 发起一条消息，不加锁
- * 
- * @param data 
- * @return std::optional<Entry> 
- */
-std::optional<Entry> RaftNode::Propose(const std::string& data);
+void RaftNode::persist(Snapshot::ptr snap) {
+    HardState hs{};
+    hs.vote = m_votedFor;
+    hs.term = m_currentTerm;
+    hs.commit = m_logs.committed();
+    m_persister->persist(hs, m_logs.allEntries(), snap);
+}
+
+void RaftNode::persistStateAndSnapshot(int64_t index, const std::string& snap) {
+    std::unique_lock<Mutextype> lock(m_mutex);
+
+    // 创建一个快照，快照的创建基于给定的索引和快照数据
+    auto snapshot = m_logs.createSnapshot(index, snap);
+
+    if (snapshot) {
+        m_logs.compact(snapshot->metadata.index);
+        SPDLOG_LOGGER_DEBUG(Logger, "starts to restore snapshot [index: {}, term:{}]", snapshot->metadata.index, snapshot->metadata.term);
+        persist(snapshot);
+    }
+}
+
+void RaftNode::persistSnapshot(Snapshot::ptr snap) {
+    std::unique_lock<Mutextype> lock(m_mutex);
+    if (snap) {
+        m_logs.compact(snap->metadata.index);
+        SPDLOG_LOGGER_DEBUG(Logger, "starts to restore snapshot [index: {}, term:{}]", snap->metadata.index, snap->metadata.term);
+        persist(snap);
+    }
+}
+
+std::optional<Entry> RaftNode::propose(const std::string& data) {
+    std::unique_lock<Mutextype> lock(m_mutex);
+    return Propose(data);
+}
+
+std::optional<Entry> RaftNode::Propose(const std::string& data) {
+    if (m_state != Leader) {
+        SPDLOG_LOGGER_DEBUG(Logger, "Node [{}] no leader at term {}, dropping proposal", m_id, m_currentTerm);
+        return std::nullopt;
+    }
+
+    Entry entry;
+    entry.term = m_currentTerm;
+    // 设置日志条目的索引为日志的最后一个索引加一
+    entry.index = m_logs.lastIndex() +1;
+    entry.data = data;
+    
+    // 将新的日志条目添加到日志中
+    m_logs.append(entry);
+    // 广播心跳消息，通知其他节点有新的日志条目
+    broadcastHeartbeat();
+    // 打印一条调试信息，包含新日志条目的索引和任期
+    SPDLOG_LOGGER_DEBUG(Logger, "Node [{}] receives a new log entry [index: {}, term: {}]", m_id, entry.index, entry.term);
+    return entry;
+}
 
 }
 

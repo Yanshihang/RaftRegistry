@@ -273,6 +273,8 @@ private:
      * 
      * @param data 
      * @return std::optional<Entry> 
+     * 
+     * @details 这个方法的目的是在当前节点是领导者时，提出一个新的日志条目。
      */
     std::optional<Entry> Propose(const std::string& data);
 
