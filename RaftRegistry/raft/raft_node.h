@@ -17,6 +17,8 @@
 #include "raft_log.h"
 
 namespace RR::raft {
+using namespace RR::rpc;
+
 /**
  * @brief Raft 的状态
  */
@@ -24,13 +26,13 @@ enum RaftState {
     Follower,
     Candidate,
     Leader
-}
+};
 
 struct ApplyMsg {
     enum MsgType {
         ENTRY,
         SNAPSHOT
-    }
+    };
 
     ApplyMsg() = default;
     explicit ApplyMsg(const Entry& entry) : type(ENTRY), data(entry.data), index(entry.index), term(entry.term) {}
