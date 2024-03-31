@@ -31,7 +31,7 @@ public:
 
     // 绑定地址
     bool bind(Address::ptr address) override;
-    // 绑定注册中心地址
+    // 绑定注册中心地址，这里的绑定其实是连接的意思。即连接到服务中心
     bool bindRegistry(Address::ptr address);
     // 启动服务器
     void start() override;
@@ -99,6 +99,8 @@ protected:
      *          proxy函数在这里发挥作用，它充当客户端请求与服务器本地方法之间的代理或桥梁。
      *          proxy负责解析请求，包括反序列化方法名和参数，然后在服务器上找到对应的方法并执行。
      *          执行完毕后，proxy还需要处理执行结果，将其序列化并准备发送回客户端。
+     * 
+     *          proxy将远程调用的处理（如参数序列化/反序列化）与业务逻辑解耦，使得业务代码更加清晰。
      */
     template <typename F>
     void proxy(F func, Serializer serializer, const std::string& arg) {
@@ -125,7 +127,7 @@ protected:
         constexpr auto size = std::tuple_size<typename std::decay<Args>::type>::value;
         auto invoke = [&func, &args]<std::size_t... Index>(std::index_sequence<Index...>) {
             return func(std::get<Index>(std::forward<Args>(args))...);
-        }
+        };
 
         if constexpr (std::is_same_v<Return, void>) { // 如果函数的返回类型是void，则无需返回值
             invoke(std::make_index_sequence<size>{}); // 调用函数
@@ -183,7 +185,7 @@ private:
     uint32_t m_port;
     // 和客户端的心跳时间， 默认40s
     uint64_t m_aliveTime;
-    // 用于于保存所有频道的订阅关系
+    // 用于保存所有频道的订阅关系
     std::map<std::string, std::list<Socket::ptr>> m_pubsubChannels;
     // 保存所有模式订阅关系
     std::list<std::pair<std::string, Socket::ptr>> m_patternChannels;

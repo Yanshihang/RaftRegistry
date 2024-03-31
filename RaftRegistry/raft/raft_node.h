@@ -28,6 +28,7 @@ enum RaftState {
     Leader
 };
 
+// 用来表示应用到状态机的消息
 struct ApplyMsg {
     enum MsgType {
         ENTRY,
@@ -79,7 +80,7 @@ struct ApplyMsg {
 /**
  * @brief Raft 节点，处理 rpc 请求，并改变状态，通过 RaftPeer 调用远端 Raft 节点
  */
-class RaftNode : public rpc::RpcService {
+class RaftNode : public rpc::RpcServer {
 public:
     using ptr = std::shared_ptr<RaftNode>;
     using Mutextype = co::co_mutex;

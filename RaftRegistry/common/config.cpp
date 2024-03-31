@@ -36,6 +36,7 @@ void Config::LoadFromYaml(const YAML::Node& node) {
         // 将key转换为小写
         std::transform(key.begin(),key.end(),key.begin(),::tolower);
         // 通过key查找对应的ConfigVarBase对象
+        // 在这里将文件中的配置项保存到静态变量中。
         auto var = LookUpBase(key);
         if (var) {
             // 判断node是否是标量，如果是，则直接调用fromString进行配置
@@ -58,7 +59,7 @@ void Config::LoadFromYaml(const YAML::Node& node) {
  * @param node 要检索的节点
  * @param result 所有节点的list
  */
-static void ListAllMembers(const std::string& prefix, const YAML::Node& node, std::list<std::pair<std::string, YAML::Node>> result) {
+static void ListAllMembers(const std::string& prefix, const YAML::Node& node, std::list<std::pair<std::string, YAML::Node>>& result) {
     if (prefix.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789._") != std::string::npos) {
         SPDLOG_LOGGER_ERROR(Logger, "Config invalid name: {}", prefix);
         return;

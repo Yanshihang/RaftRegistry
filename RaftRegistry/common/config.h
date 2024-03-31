@@ -402,7 +402,7 @@ public:
 
 private:
     T m_val; // 当前配置项的值
-    std::map<int64_t, Callback> m_callbacks; // 用于存储回调函数
+    std::map<int64_t, Callback> m_callbacks; // 用于存储回调函数，可以给一个配置项添加多个回调函数
     co_rwmutex m_mutex; // 读写锁，用于线程安全的访问和修改配置项（m_val)的值(也包括m_callbacks的值)
 };
 
@@ -458,7 +458,7 @@ public:
             if (tmp) {
                 SPDLOG_LOGGER_INFO(GetLoggerInstance(),"lookup name={} already exist", name);
                 return tmp;
-            }else {
+            } else {
                 SPDLOG_LOGGER_INFO(GetLoggerInstance(),"lookup name={} already exist but type not {}, exact type is {}, value is {}", name, typeid(T).name(), iter->second->getTypeName(), iter->second->toString());
                 return nullptr;
             }

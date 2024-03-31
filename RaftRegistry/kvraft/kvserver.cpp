@@ -5,7 +5,7 @@
 #include "kvserver.h"
 #include <random>
 #include <chrono>
-#include "RaftRegistry/common/config.h"
+#include "RaftRegistry/command/config.h"
 
 namespace RR::kvraft {
 using namespace RR;

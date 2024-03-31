@@ -118,6 +118,7 @@ private:
 private:
     // 快照目录
     const std::filesystem::path m_dir;
+    // 快照名的后缀
     const std::string m_snap_suffix
 }
 }

@@ -2,12 +2,14 @@
 // File created on: 2024/03/28
 // Author: Zizhou
 
-#ifndef RR_KVRAFT_COMMON_H
-#define RR_KVRAFT_COMMON_H
+#ifndef RR_KVRAFT_COMMAND_H
+#define RR_KVRAFT_COMMAND_H
 
 #include <string>
 #include <fmt/format.h>
 #include "RaftRegistry/rpc/serializer.h"
+
+// 这个文件为kvraft模块定义了一些常量、枚举和结构体，用于表示键值存储的命令请求和响应
 
 namespace RR::kvraft {
 using namespace RR::rpc;
@@ -125,4 +127,4 @@ struct CommandResponse {
 };
 }
 
-#endif // RR_KVRAFT_COMMON_H
+#endif // RR_KVRAFT_COMMAND_H

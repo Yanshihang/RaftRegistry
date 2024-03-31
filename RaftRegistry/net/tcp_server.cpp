@@ -19,6 +19,7 @@ TcpServer::~TcpServer() {
 }
 
 bool TcpServer::bind(Address::ptr addr) {
+    // addrs用于保存要bind的address，fail用于保存bind失败的address
     std::vector<Address::ptr> addrs, fail;
     addrs.push_back(addr);
     return bind(addrs, fail);

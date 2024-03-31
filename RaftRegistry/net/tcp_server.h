@@ -29,7 +29,7 @@ public:
     virtual bool bind(Address::ptr addr);
 
     /**
-     * @brief 绑定服务器到多个网络地址，
+     * @brief 绑定服务器到多个网络地址，在调用系统调用bind之前会进行socket的创建。bind后会直接进行监听listen
      * 
      * @param addrs 和服务器绑定的地址列表
      * @param fail 绑定失败的地址列表

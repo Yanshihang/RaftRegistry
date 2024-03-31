@@ -92,6 +92,7 @@ public:
         return call<R>(s);
     }
 
+    // name是要调用的RPC方法的名称，params是要传递给这个方法的参数，其中最后一个参数应该是一个回调函数。
     template <typename... Params>
     void callback(const std::string& name, Params&&... params) {
         // 确保至少有一个参数，这个参数应该是回调函数
@@ -116,7 +117,7 @@ public:
         go [cb = std::move(cb), name, tp = std::move(tp), self, this] {
             auto proxy = [&cb, &name, &tp, this]<std::size_t... Index>(std::index_sequence<Index...>) {
                 cb(call<rt>(name, std::get<Index>(tp)...));
-            }
+            };
             proxy(std::make_index_sequence<size-1>{});
             // 使用 self，防止当前对象在协程执行期间被销毁
             // 在协程中，由于协程的异步性质，协程的执行可能会跨越多个作用域。这就可能导致在协程开始执行时存在的对象，在协程执行过程中被销毁。

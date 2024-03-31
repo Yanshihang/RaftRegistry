@@ -50,7 +50,7 @@ ssize_t SocketStream::write(ByteArray::ptr buffer, size_t len) {
     if (isConnected()) {
         std::vector<iovec> iovs; // 创建iovs向量，用于发送数据
         buffer->getReadBuffers(iovs, len); // 获取iovs向量，每个iovec都指向了ByteArray的一个Node
-        ssize_t realLen = m_socket->recv(&iovs[0], len); // 调用Socket的send方法，发送数据
+        ssize_t realLen = m_socket->send(&iovs[0], len); // 调用Socket的send方法，发送数据
         if (realLen > 0) {
             buffer->setPosition(buffer->getPosition() + realLen); // 更新ByteArray的读位置
         }

@@ -3,7 +3,7 @@
 // Author: Zizhou
 
 #include "kvclient.h"
-#include "RaftRegistry/common/config.h"
+#include "RaftRegistry/command/config.h"
 #include <random>
 #include <string>
 #include <vector>
@@ -36,7 +36,7 @@ namespace {
     };
 
     // 实例化，以触发构造函数中的逻辑
-    [[maybe unused]] static KVClientIniter s_initer;
+    [[maybe_unused]] static KVClientIniter s_initer;
 }
 
 KVClient::KVClient(std::map<int64_t, std::string>& servers) {
@@ -105,7 +105,8 @@ CommandResponse KVClient::Command(CommandRequest& request) {
             continue;
         }
 
-        // 使用call调用远程函数
+        // 使用call调用远程函数，call是rpc_client.h中的一个模板函数
+        // 将这里的的CommandRequest作为数据包传给call函数，然后由call函数真正的在网络中发起rpc调用
         Result<CommandResponse> result = call<CommandResponse>(COMMAND, request);
         if (result.getCode() == RpcState::RPC_SUCCESS) {
             response = result.getVal();

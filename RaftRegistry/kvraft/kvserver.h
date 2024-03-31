@@ -10,7 +10,7 @@
 #include <memory>
 #include <libgo/libgo.h>
 #include <cstdint>
-#include "common.h"
+#include "command.h"
 #include "RaftRegistry/raft/raft_node.h"
 
 namespace RR::kvraft {
