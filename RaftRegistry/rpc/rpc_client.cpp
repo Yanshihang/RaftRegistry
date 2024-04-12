@@ -169,18 +169,18 @@ bool RpcClient::subscribe(PubsubListener::ptr listener, const std::vector<std::s
         }
         size = m_subs.size();
         // 创建用于等待所有订阅请求操作结果的协程通道
-        wait = co::co_chan<bool>{size};
+        chan = co::co_chan<bool>{size};
 
         // 遍历订阅列表，为每个订阅的频道发送订阅请求
         for (auto& sub : m_subs) {
-            go [wait, sub, this] {
+            go [chan, sub, this] {
                 PubsubRequest request{.type = PubsubMsgType::Subscribe, .channel = sub.first};
                 Serializer s;
                 s << request;
                 s.reset();
                 auto [response, timeout] = sendProtocol(Protocol::Create(Protocol::MsgType::RPC_PUBSUB_REQUEST, s.toString()));
                 if (!response || timeout) {
-                    wait << false;
+                    chan << false;
                     return;
                 }
                 go [channel = sub.first, this] {
@@ -192,9 +192,9 @@ bool RpcClient::subscribe(PubsubListener::ptr listener, const std::vector<std::s
                 bool res;
                 sub.second >> res;
                 if (res) {
-                    m_listener->onUnsubscribe(channel);
+                    m_listener->onUnsubscribe(sub.first);
                 }
-                wait << res;
+                chan << res;
             }
         }
     }
@@ -463,9 +463,9 @@ std::pair<Protocol::ptr, bool> RpcClient::sendProtocol(Protocol::ptr request) {
     {
         std::unique_lock<MutexType> lock(m_mutex);
         ++m_sequenceId;
-        id = m_sequenceId;
+        seqId = m_sequenceId;
         // 将请求序列号与接收 Channel 关联
-        iter = m_responseHandle..emplace(m_sequenceId, recvChan).first;
+        iter = m_responseHandle.emplace(m_sequenceId, recvChan).first;
     }
 
     // 创建请求协议，附带上请求 id

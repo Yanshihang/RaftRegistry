@@ -44,7 +44,7 @@ public:
     CommandResponse Clear();
 
     // 获取当前的键值对数据，用于调试或其他目的
-    [[npdiscard]] const KVMap& getData() const { return m_data;}
+    [[nodiscard]] const KVMap& getData() const { return m_data;}
 
 private:
     // 应用Raft日志到状态机的后台协程

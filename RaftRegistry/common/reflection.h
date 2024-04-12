@@ -22,7 +22,7 @@ constexpr std::size_t member = 0;
  */
 struct UniversalType {
     template <typename T>
-    operator T();
+    operator T() {}
 };
 
 /**

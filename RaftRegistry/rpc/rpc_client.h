@@ -92,6 +92,9 @@ public:
         return call<R>(s);
     }
 
+    // 异步回调模式
+    // 它接收一个RPC方法的名称和一系列参数，其中最后一个参数是一个回调函数。当RPC调用完成后，这个回调函数会被调用，并接收RPC调用的结果。
+    // 这种方式的优点是可以立即返回，不需要等待RPC调用完成，但是需要提供一个回调函数来处理结果。
     // name是要调用的RPC方法的名称，params是要传递给这个方法的参数，其中最后一个参数应该是一个回调函数。
     template <typename... Params>
     void callback(const std::string& name, Params&&... params) {
@@ -133,6 +136,9 @@ public:
      * @param name 要调用的远程函数
      * @param ps 远程函数所需的参数
      * @return co_chan<Result<R>> 结果
+     * 
+     * @details 这里其实算是半同步调用，半同步调用结合了同步调用的简单性（可以直接获取调用结果）和异步调用的效率（不需要等待调用完成）。
+     *          
      */
     template <typename R, typename... Params>
     co_chan<Result<R>> async_call(const std::string& name, Params&&... ps) {

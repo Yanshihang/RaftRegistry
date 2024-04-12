@@ -12,7 +12,7 @@
 
 namespace RR::raft {
 
-inline const std::string REQUEST_VOTE = "RaftNode::handleRequestVote";
+inline const std::string REQUEST_VOTE ="RaftNode::handleRequestVote";
 inline const std::string APPEND_ENTRIES = "RaftNode::handleAppendEntries";
 inline const std::string INSTALL_SNAPSHOT = "RaftNode::handleInstallSnapshot";
 

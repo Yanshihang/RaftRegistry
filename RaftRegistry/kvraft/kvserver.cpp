@@ -202,6 +202,7 @@ void KVServer::applier() {
         }
     }
 }
+
 void KVServer::saveSnapshot(int64_t index) {
     Serializer s;
     s << m_data << m_lastOperation; // 将键值对映射和最后操作映射序列化
